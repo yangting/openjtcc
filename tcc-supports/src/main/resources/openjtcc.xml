@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans    
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd    
+           http://www.springframework.org/schema/context    
+           http://www.springframework.org/schema/context/spring-context-3.0.xsd    
+           http://www.springframework.org/schema/aop    
+           http://www.springframework.org/schema/aop/spring-aop-3.0.xsd    
+           http://www.springframework.org/schema/tx 
+           http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+
+	<description>The openjtcc transaction manager module</description>
+
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location">
+			<value>classpath:openjtcc.properties</value>
+		</property>
+	</bean>
+
+	<bean id="terminalKey" class="org.bytesoft.openjtcc.common.TerminalKey">
+		<property name="application" value="${tcc.application}" />
+		<property name="endpoint" value="${tcc.endpoint}" />
+	</bean>
+
+	<bean id="xidFactory" class="org.bytesoft.openjtcc.supports.internal.XidFactoryImpl">
+		<property name="terminalKey" ref="terminalKey" />
+	</bean>
+
+	<bean id="tccTransactionManager" class="org.bytesoft.openjtcc.TransactionManagerImpl">
+		<property name="transactionRepository" ref="transactionRepository" />
+		<property name="cleanupProcesser" ref="cleanupWork" />
+		<property name="transactionStatistic" ref="transactionStatistic" />
+		<property name="xidFactory" ref="xidFactory" />
+	</bean>
+
+	<bean id="userTransaction" class="org.bytesoft.openjtcc.UserTransactionImpl">
+		<property name="transactionManager" ref="tccTransactionManager" />
+	</bean>
+
+	<bean id="transactionManager" class="org.springframework.transaction.jta.JtaTransactionManager">
+		<property name="userTransaction" ref="userTransaction" />
+		<property name="transactionManager" ref="tccTransactionManager" />
+	</bean>
+	<tx:annotation-driven transaction-manager="transactionManager" />
+
+	<bean id="transactionRepository" class="org.bytesoft.openjtcc.supports.internal.TransactionRepositoryImpl">
+		<property name="transactionLogger" ref="transactionLogger" />
+	</bean>
+
+	<bean id="objectSerializer" class="org.bytesoft.openjtcc.supports.marshall.ObjectSerializerImpl" />
+
+	<bean id="transactionLogger" class="org.bytesoft.openjtcc.supports.logger.DbTransactionLoggerImpl">
+		<property name="dataSource" ref="loggerDataSource" />
+		<property name="compensableMarshaller" ref="compensableMarshaller" />
+		<property name="terminatorMarshaller" ref="terminatorMarshaller" />
+		<property name="serializer" ref="objectSerializer" />
+		<property name="xidFactory" ref="xidFactory" />
+		<property name="instanceKey" ref="terminalKey" />
+	</bean>
+
+	<bean id="compensableMarshaller" class="org.bytesoft.openjtcc.supports.marshall.CompensableMarshallerImpl">
+		<property name="beanFactory" ref="nativeBeanFactory" />
+	</bean>
+
+	<bean id="compensableContext" class="org.bytesoft.openjtcc.supports.CompensableContextProxy">
+		<property name="transactionManager" ref="tccTransactionManager" />
+	</bean>
+
+	<bean id="remoteBeanFactory" class="org.bytesoft.openjtcc.supports.spring.RemoteBeanFactoryImpl">
+		<property name="transactionManager" ref="tccTransactionManager" />
+		<property name="remoteInvocationInterceptor" ref="remoteInvocationInterceptor" />
+		<property name="remoteInvocationServiceFactory" ref="remoteInvocationServiceFactory" />
+	</bean>
+
+	<bean id="nativeBeanFactory" class="org.bytesoft.openjtcc.supports.spring.NativeBeanFactoryImpl">
+		<property name="transactionManager" ref="tccTransactionManager" />
+	</bean>
+
+	<bean id="propagateBeanFactory" class="org.bytesoft.openjtcc.supports.spring.PropagateBeanFactoryImpl">
+		<property name="transactionManager" ref="tccTransactionManager" />
+	</bean>
+
+	<bean id="transactionStatistic" class="org.bytesoft.openjtcc.supports.internal.TransactionStatisticImpl" />
+
+	<bean id="recoveryManager" class="org.bytesoft.openjtcc.recovery.RecoveryManager">
+		<property name="transactionManager" ref="tccTransactionManager" />
+		<property name="transactionStatistic" ref="transactionStatistic" />
+	</bean>
+
+	<bean id="recoveryWork" class="org.bytesoft.openjtcc.supports.adapter.work.TransactionRecoveryWork">
+		<property name="recoveryManager" ref="recoveryManager" />
+		<property name="expireIntervalSeconds" value="30" />
+	</bean>
+	<bean id="timingWork" class="org.bytesoft.openjtcc.supports.adapter.work.TransactionTimingWork">
+		<property name="timingProcesser" ref="tccTransactionManager" />
+	</bean>
+	<bean id="cleanupWork" class="org.bytesoft.openjtcc.supports.adapter.work.TransactionCleanupWork" />
+	<bean id="resourceAdapter" class="org.springframework.jca.support.ResourceAdapterFactoryBean">
+		<property name="resourceAdapter">
+			<bean class="org.bytesoft.openjtcc.supports.adapter.TransactionResourceAdapter">
+				<property name="cleanupWork" ref="cleanupWork" />
+				<property name="recoveryWork" ref="recoveryWork" />
+				<property name="timingWork" ref="timingWork" />
+				<property name="recoveryManager" ref="recoveryManager" />
+			</bean>
+		</property>
+		<property name="workManager">
+			<bean class="org.springframework.jca.work.SimpleTaskWorkManager" />
+		</property>
+	</bean>
+
+	<bean id="remoteInvocationService" class="org.bytesoft.openjtcc.supports.dubbo.internal.RemoteInvocationServerInvoker">
+		<property name="transactionManager" ref="tccTransactionManager" />
+		<property name="beanFactory" ref="nativeBeanFactory" />
+		<property name="remoteInvocationInterceptor" ref="remoteInvocationInterceptor" />
+	</bean>
+
+	<bean id="terminatorMarshaller" class="org.bytesoft.openjtcc.supports.marshall.TerminatorMarshallerImpl" />
+
+	<bean id="remoteInvocationServiceFactory" class="org.bytesoft.openjtcc.supports.dubbo.internal.RemoteInvocationServiceFactoryImpl" />
+
+	<bean id="remoteInvocationInterceptor" class="org.bytesoft.openjtcc.supports.internal.RemoteInvocationInterceptorImpl">
+		<property name="transactionManager" ref="tccTransactionManager" />
+		<property name="terminatorMarshaller" ref="terminatorMarshaller" />
+	</bean>
+
+</beans>
