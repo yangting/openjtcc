@@ -1,4 +1,7 @@
 /target/
 /.classpath
 /.project
+<<<<<<< HEAD
 /.settings/
+=======
+>>>>>>> branch 'master' of git@github.com:yangting/openjtcc.git
