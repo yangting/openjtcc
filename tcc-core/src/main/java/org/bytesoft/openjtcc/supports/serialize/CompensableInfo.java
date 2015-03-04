@@ -20,8 +20,6 @@ import java.io.Serializable;
 import org.bytesoft.utils.CommonUtils;
 
 public class CompensableInfo implements Serializable {
-	private static final long serialVersionUID = 1L;
-
 	private String branchQualifier;
 	private Serializable identifier;
 

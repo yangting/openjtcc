@@ -21,8 +21,6 @@ import java.util.Stack;
 import org.bytesoft.openjtcc.xa.XidImpl;
 
 public class TransactionContext implements Serializable, Cloneable {
-	private static final long serialVersionUID = 1L;
-
 	private transient boolean coordinator;
 	private transient boolean recovery;
 	private transient XidImpl creationXid;

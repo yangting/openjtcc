@@ -19,8 +19,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 public class PropagationKey implements Cloneable, Serializable {
-	private static final long serialVersionUID = 1L;
-
 	private byte[] instanceKey;
 
 	public PropagationKey(byte[] bytes) {

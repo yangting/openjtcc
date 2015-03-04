@@ -22,7 +22,6 @@ import java.util.logging.Logger;
 import javax.transaction.Status;
 
 public final class TransactionStatus implements Serializable {
-	private static final long serialVersionUID = 1L;
 	private static final Logger logger = Logger.getLogger("openjtcc");
 
 	public static final int STATUS_ACTIVE = 0x0;
