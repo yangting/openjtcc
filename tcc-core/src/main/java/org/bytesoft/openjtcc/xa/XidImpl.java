@@ -23,8 +23,6 @@ import javax.transaction.xa.Xid;
 import org.bytesoft.utils.ByteUtils;
 
 public class XidImpl implements Xid, Serializable {
-	private static final long serialVersionUID = 1L;
-
 	public static final int xidFormatId = 13923;
 
 	private final int formatId = xidFormatId;
